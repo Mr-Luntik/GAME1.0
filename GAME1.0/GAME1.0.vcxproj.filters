@@ -26,5 +26,8 @@
     <ClInclude Include="view.h">
       <Filter>Исходные файлы</Filter>
     </ClInclude>
+    <ClInclude Include="mission.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
