@@ -1,27 +1,36 @@
 #include <SFML/Graphics.hpp>
-#include "map.h"
+//#include "map.h"
 #include "view.h"
 #include <iostream>
 #include <sstream>
 #include "mission.h"
+#include <vector>
+//#include <list>
+#include "Level.h"
+
 using namespace sf;
 using namespace std;
 
 class Entity {
 public:
+	vector<Object>obj;
 	float dx, dy, x, y, speed, moveTimer;//добавили переменную таймер для будущих целей
 	int w, h, health, dir;
 	bool life, isMove, onGround;
 	Texture texture;
 	Sprite sprite;
 	String name;//враги могут быть разные, мы не будем делать другой класс для различающегося врага.всего лишь различим врагов по имени и дадим каждому свое действие в update в зависимости от имени
-	Entity(Image& image, float X, float Y, int W, int H, String Name) {
+	Entity(Image& image, String Name, Level &Lvl, float X, float Y, int W, int H) {
 		x = X; y = Y; w = W; h = H; name = Name; moveTimer = 0;
 		speed = 0; health = 100; dx = 0; dy = 0, dir = 0;
 		life = true; onGround = false; isMove = false;
 		texture.loadFromImage(image);
 		sprite.setTexture(texture);
 		sprite.setOrigin(w / 2, h / 2);
+	}
+	FloatRect getRect()
+	{
+		return FloatRect(x, y, w, h);
 	}
 };
 ////////////////////////////////////////////////////КЛАСС ИГРОКА////////////////////////
@@ -30,8 +39,8 @@ public:
 	enum { left, right, up, down, jump, stay } state;//добавляем тип перечисления - состояние объекта
 	int playerScore;//эта переменная может быть только у игрока
 
-	Player(Image& image, float X, float Y, int W, int H, String Name) :Entity(image, X, Y, W, H, Name) {
-		playerScore = 0; state = stay;
+	Player(Image& image, String Name, Level &lvl, float X, float Y, int W, int H) :Entity(image, Name, lvl, X, Y, W, H) {
+		playerScore = 0; state = stay; obj = lvl.GetAllObjects();
 		if (name == "Player1") {
 			sprite.setTextureRect(IntRect(4, 19, w, h));
 		}
@@ -59,18 +68,29 @@ public:
 
 	void checkCollisionWithMap(float Dx, float Dy)//ф-ция взаимодействия с картой
 	{
-		for (int i = y / 32; i < (y + h) / 32; i++)//проходимся по тайликам, контактирующим с игроком,, то есть по всем квадратикам размера 32*32, которые мы окрашивали в 9 уроке. про условия читайте ниже.
-			for (int j = x / 32; j < (x + w) / 32; j++)//икс делим на 32, тем самым получаем левый квадратик, с которым персонаж соприкасается. (он ведь больше размера 32*32, поэтому может одновременно стоять на нескольких квадратах). А j<(x + w) / 32 - условие ограничения координат по иксу. то есть координата самого правого квадрата, который соприкасается с персонажем. таким образом идем в цикле слева направо по иксу, проходя по от левого квадрата (соприкасающегося с героем), до правого квадрата (соприкасающегося с героем)
+		//for (int i = y / 32; i < (y + h) / 32; i++)//проходимся по тайликам, контактирующим с игроком,, то есть по всем квадратикам размера 32*32, которые мы окрашивали в 9 уроке. про условия читайте ниже.
+		//	for (int j = x / 32; j < (x + w) / 32; j++)//икс делим на 32, тем самым получаем левый квадратик, с которым персонаж соприкасается. (он ведь больше размера 32*32, поэтому может одновременно стоять на нескольких квадратах). А j<(x + w) / 32 - условие ограничения координат по иксу. то есть координата самого правого квадрата, который соприкасается с персонажем. таким образом идем в цикле слева направо по иксу, проходя по от левого квадрата (соприкасающегося с героем), до правого квадрата (соприкасающегося с героем)
+		//	{
+		//		if (TileMap[i][j] == '0')//если наш квадратик соответствует символу 0 (стена), то проверяем "направление скорости" персонажа:
+		//		{
+		//			if (Dy > 0) { y = i * 32 - h; Dy = 0; onGround = true; }//если мы шли вниз
+		//			//то стопорим координату игрек персонажа. сначала получаем координату нашего квадратика на карте(стены) и затем вычитаем из высоты спрайта персонажа
+		//			if (Dy < 0) { y = i * 32 + 32; Dy = 0; }//аналогично с ходьбой вверх. dy<0, значит мы идем вверх (вспоминаем координаты
+		//			if (Dx > 0) { x = j * 32 - w; }//если идем вправо, то координата Х равна стена (символ 0) минус ширина
+		//			if (Dx < 0) { x = j * 32 + 32; } //аналогично идем влево
+		//		}
+		//		/*else { onGround = false; }*/
+		//	}
+		for (int i = 0; i < obj.size(); i++)//проходимся по объектам
+			if (getRect().intersects(obj[i].rect))//проверяем пересечение игрока с объектом
 			{
-				if (TileMap[i][j] == '0')//если наш квадратик соответствует символу 0 (стена), то проверяем "направление скорости" персонажа:
+				if (obj[i].name == "solid")//если встретили препятствие
 				{
-					if (Dy > 0) { y = i * 32 - h; Dy = 0; onGround = true; }//если мы шли вниз
-					//то стопорим координату игрек персонажа. сначала получаем координату нашего квадратика на карте(стены) и затем вычитаем из высоты спрайта персонажа
-					if (Dy < 0) { y = i * 32 + 32; Dy = 0; }//аналогично с ходьбой вверх. dy<0, значит мы идем вверх (вспоминаем координаты
-					if (Dx > 0) { x = j * 32 - w; }//если идем вправо, то координата Х равна стена (символ 0) минус ширина
-					if (Dx < 0) { x = j * 32 + 32; } //аналогично идем влево
+					if (Dy > 0) { y = obj[i].rect.top - h;  dy = 0; onGround = true; }
+					if (Dy < 0) { y = obj[i].rect.top + obj[i].rect.height;   dy = 0; }
+					if (Dx > 0) { x = obj[i].rect.left - w; }
+					if (Dx < 0) { x = obj[i].rect.left + obj[i].rect.width; }
 				}
-				/*else { onGround = false; }*/
 			}
 	}
 
@@ -110,8 +130,9 @@ public:
 class Enemy :public Entity
 {
 public:
-	Enemy(Image& image, float X, float Y, int W, int H, String Name) : Entity(image, X, Y, W, H, Name)
+	Enemy(Image& image, String Name, Level &lvl, float X, float Y, int W, int H) : Entity(image, Name, lvl, X, Y, W, H )
 	{
+		obj = lvl.GetAllObjects();
 		if (name == "EasyEnemy")
 		{
 			sprite.setTextureRect(IntRect(0, 0, w, h));
@@ -121,16 +142,16 @@ public:
 
 	void checkCollisionWithMap(float Dx, float Dy)//ф ция проверки столкновений с картой
 	{
-		for (int i = y / 32; i < (y + h) / 32; i++)//проходимся по элементам карты
-			for (int j = x / 32; j < (x + w) / 32; j++)
+		for (int i = 0; i < obj.size(); i++)//проходимся по объектам
+			if (getRect().intersects(obj[i].rect))//проверяем пересечение игрока с объектом
 			{
-				if (TileMap[i][j] == '0')//если элемент наш тайлик земли, то
-				{
-					if (Dy > 0) { y = i * 32 - h; }//по Y вниз=>идем в пол(стоим на месте) или падаем. В этот момент надо вытолкнуть персонажа и поставить его на землю, при этом говорим что мы на земле тем самым снова можем прыгать
-					if (Dy < 0) { y = i * 32 + 32; }//столкновение с верхними краями карты(может и не пригодиться)
-					if (Dx > 0) { x = j * 32 - w; dx = -0.1; sprite.scale(-1, 1); }//с правым краем карты
-					if (Dx < 0) { x = j * 32 + 32; dx = 0.1; sprite.scale(-1, 1); }// с левым краем карты
-				}
+				//if (obj[i].name == "solid")//если встретили препятствие
+				//{
+					if (Dy > 0) { y = obj[i].rect.top - h;  dy = 0; onGround = true; }
+					if (Dy < 0) { y = obj[i].rect.top + obj[i].rect.height;   dy = 0; }
+					if (Dx > 0) { x = obj[i].rect.left - w;  dx = -0.1; sprite.scale(-1, 1); }
+					if (Dx < 0) { x = obj[i].rect.left + obj[i].rect.width; dx = 0.1; sprite.scale(-1, 1); }
+				/*}*/
 			}
 	}
 
@@ -152,12 +173,15 @@ int main()
 	RenderWindow window(sf::VideoMode(640, 480), "Lesson 1. kychka-pc.ru"/*, Style::Fullscreen*/);
 	view.reset(FloatRect(0, 0, 640, 480));
 
-	Image map_image;
+	Level lvl;
+	lvl.LoadFromFile("FilesTheTiles/Map.tmx");
+
+	/*Image map_image;
 	map_image.loadFromFile("images/map.png");
 	Texture map;
 	map.loadFromImage(map_image);
 	Sprite s_map;
-	s_map.setTexture(map);
+	s_map.setTexture(map);*/
 
 	Image easyEnemyImage;
 	easyEnemyImage.loadFromFile("images/shamaich.png");
@@ -166,8 +190,11 @@ int main()
 	Image heroImage;
 	heroImage.loadFromFile("images/MilesTailsPrower.gif");
 
-	Player p(heroImage, 750, 500, 40, 30, "Player1");//объект класса игрока
-	Enemy easyEnemy(easyEnemyImage, 850, 671, 200, 97, "EasyEnemy");
+	Object player = lvl.GetObject("player");
+	Object easyEnemyObject = lvl.GetObject("easyEnemy");
+
+	Player p(heroImage, "Player1", lvl, player.rect.left, player.rect.top, 40, 30);//передаем координаты прямоугольника player из карты в координаты нашего игрока
+	Enemy easyEnemy(easyEnemyImage, "EasyEnemy", lvl, easyEnemyObject.rect.left, easyEnemyObject.rect.top, 200, 97);//передаем координаты прямоугольника easyEnemy из карты в координаты нашего врага
 
 	Clock clock;
 	while (window.isOpen())
@@ -191,10 +218,11 @@ int main()
 		p.update(time);
 		easyEnemy.update(time);
 		window.setView(view);
-		window.clear();
+		window.clear(Color(77, 83, 140));
+		lvl.Draw(window);
 
 		//Рисуем карту
-		for (int i = 0; i < HEIGHT_MAP; i++)
+		/*for (int i = 0; i < HEIGHT_MAP; i++)
 			for (int j = 0; j < WIDTH_MAP; j++)
 			{
 				if (TileMap[i][j] == ' ')  s_map.setTextureRect(IntRect(0, 0, 32, 32));
@@ -205,7 +233,7 @@ int main()
 				s_map.setPosition(j * 32, i * 32);
 
 				window.draw(s_map);
-			}
+			}*/
 		window.draw(easyEnemy.sprite);
 		window.draw(p.sprite);
 		window.display();
