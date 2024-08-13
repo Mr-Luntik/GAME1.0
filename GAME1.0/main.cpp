@@ -1,9 +1,9 @@
 ﻿#include <SFML/Graphics.hpp>
-//#include "map.h"
 #include "view.h"
 #include <iostream>
 #include <sstream>
 #include "mission.h"
+#include <windows.h>
 #include "iostream"
 #include "level.h"
 #include <vector>
@@ -14,22 +14,22 @@ using namespace sf;
 class Entity {
 public:
 	std::vector<Object> obj;//вектор объектов карты
-	float dx, dy, x, y, speed, moveTimer;
+	float dx, dy, x, y, speed, moveTimer, deltaTime, elapsedTime, respawnTime, currentFrame;
 	int w, h, health;
-	bool life, isMove, onGround;
+	bool life, isMove, onGround, enemyAlive;
 	Texture texture;
 	Sprite sprite;
 	String name;
 	Entity(Image& image, String Name, float X, float Y, int W, int H) {
-		x = X; y = Y; w = W; h = H; name = Name; moveTimer = 0;
+		x = X; y = Y; w = W; h = H; name = Name; moveTimer = 0, elapsedTime = 0, respawnTime = 3000, currentFrame = 0;
 		speed = 0; health = 100; dx = 0; dy = 0;
-		life = true; onGround = false; isMove = false;
+		life = true; onGround = false; isMove = false; enemyAlive = true;
 		texture.loadFromImage(image);
 		sprite.setTexture(texture);
 		sprite.setOrigin(w / 2, h / 2);
 	}
 	FloatRect getRect() {//ф-ция получения прямоугольника. его коорд,размеры (шир,высот).
-		return FloatRect(x, y, w, h);//эта ф-ция нужна для проверки столкновений 
+		return FloatRect(x, y, w, h);//эта ф-ция нужна для проверки столкновений
 	}
 	virtual void update(float time) = 0;
 };
@@ -48,24 +48,26 @@ public:
 	{
 		return FloatRect(x, y, w, h);
 	}
+	
 	void control() {
 		
-			if (Keyboard::isKeyPressed(Keyboard::Left)) {
-				state = left; speed = 0.1;
-				sprite.setTextureRect(IntRect(6, 76, w, h));
-			}
-			if (Keyboard::isKeyPressed(Keyboard::Right)) {
-				state = right; speed = 0.1;
-				sprite.setTextureRect(IntRect(4, 149, w, h));
-				
-			}
-			if ((Keyboard::isKeyPressed(Keyboard::Up)) && (onGround)) {
-				state = jump; dy = -0.6; onGround = false;
-			}
-			if (Keyboard::isKeyPressed(Keyboard::Down)) {
-				state = down;
-			} 
-			
+		if (Keyboard::isKeyPressed(Keyboard::Left)) {
+			state = left; speed = 0.1;
+			sprite.setTextureRect(IntRect(6, 76, w, h));
+
+		}
+		if (Keyboard::isKeyPressed(Keyboard::Right)) {
+			state = right; speed = 0.1;
+			sprite.setTextureRect(IntRect(50, 149, w, h));
+		}
+		if ((Keyboard::isKeyPressed(Keyboard::Up)) && (onGround)) {
+			state = jump; dy = -0.6; onGround = false;
+		}
+		if (Keyboard::isKeyPressed(Keyboard::Down)) {
+			state = down;
+		}
+		
+		
 	}
 	void checkCollisionWithMap(float Dx, float Dy)
 	{
@@ -81,15 +83,22 @@ public:
 					if (Dx < 0) { x = obj[i].rect.left + obj[i].rect.width; }
 				}
 			}
+			else { if (dy > 0){onGround = false;} }
 		}
 	}
 	void update(float time)
 	{
+		currentFrame += 0.005 * time;
+		if (currentFrame > 3)
+		{
+			currentFrame -= 3;
+		}
 		control();
+		
 		switch (state)
 		{
-		case right:dx = speed;  break;
-		case left:dx = -speed; break;
+		case right:dx = speed; if (speed != 0) { sprite.setTextureRect(IntRect(50 * int(currentFrame), 149, 41, 64)); } break;
+		case left:dx = -speed; if (speed != 0) { sprite.setTextureRect(IntRect(50 * int(currentFrame), 77, 41, 64)); } break;
 		case up: break;
 		case down: dx = 0; break;
 		case stay: break;
@@ -104,6 +113,8 @@ public:
 		setPlayercoordinateForView(x, y);
 		if (life) { setPlayercoordinateForView(x, y); }
 		dy = dy + 0.0015 * time;
+		deltaTime = time;
+		
 	}
 };
 class Enemy :public Entity {
@@ -146,25 +157,29 @@ int main()
 	view.reset(FloatRect(0, 0, 640, 480));
 	Level lvl;//создали экземпляр класса уровень
 	lvl.LoadFromFile("map.tmx");//загрузили в него карту, внутри класса с помощью методов он ее обработает.
-	
+
 	Image heroImage;
 	heroImage.loadFromFile("images/Mage.png");
 	Image easyEnemyImage;
 	easyEnemyImage.loadFromFile("images/Skeleton enemy.png");
 
 	Object player = lvl.GetObject("player");//объект игрока на нашей карте.задаем координаты игроку в начале при помощи него
-	
+
 	Player p(heroImage, "Player1", lvl, player.rect.left, player.rect.top, 40, 67);//передаем координаты прямоугольника player из карты в координаты нашего игрока
+
 	
 	std::list<Entity*> entities;
 	std::list <Entity*> ::iterator it;
 	std::vector<Object> e = lvl.GetObjects("EasyEnemy");
-	for (int i = 0; i < e.size(); i++)//проходимся по элементам этого вектора(а именно по врагам)
-		entities.push_back(new Enemy(easyEnemyImage, "EasyEnemy", lvl, e[i].rect.left, e[i].rect.top, 39, 36));//и закидываем в список всех наших врагов с карты
+		for (int i = 0; i < e.size(); i++)//проходимся по элементам этого вектора(а именно по врагам)
+			entities.push_back(new Enemy(easyEnemyImage, "EasyEnemy", lvl, e[i].rect.left, e[i].rect.top, 39, 36));//и закидываем в список всех наших врагов с карты
+
 	Clock clock;
-	
+
+	float respawnTimer = 3000, elapsedTime = 0;
 	while (window.isOpen())
 	{
+		
 		if (Keyboard::isKeyPressed(Keyboard::Escape)) {
 			window.close();
 		}
@@ -181,11 +196,20 @@ int main()
 		p.update(time);
 		for (it = entities.begin(); it != entities.end();)
 		{
+			
 			Entity* b = *it;
 			b->update(time);
-			if (b->life == false) { it = entities.erase(it); delete b; }
+			if (b->life == false)
+			{
+				it = entities.erase(it);
+				delete b;
+
+				entities.push_back(new Enemy(easyEnemyImage, "EasyEnemy", lvl, 1200, 700, 39, 36));
+			}
 			else it++;
 		}
+		
+
 		for (it = entities.begin(); it != entities.end(); it++)
 		{
 			if ((*it)->getRect().intersects(p.getRect()))
@@ -201,10 +225,10 @@ int main()
 			}
 		}
 		for (it = entities.begin(); it != entities.end(); it++) /*{ (*it)->update(time); }*/
-		window.setView(view);
+			window.setView(view);
 		window.clear(Color(77, 83, 140));
 		lvl.Draw(window);//рисуем новую карту
-		
+
 		for (it = entities.begin(); it != entities.end(); it++) {
 			window.draw((*it)->sprite);
 		}

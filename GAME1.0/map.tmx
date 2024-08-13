@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="50" height="27" tilewidth="32" tileheight="32" nextobjectid="19">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="50" height="27" tilewidth="32" tileheight="32" nextobjectid="20">
  <tileset firstgid="1" name="UltraSuperMegaPackSprites" tilewidth="32" tileheight="32">
   <image source="UltraSuperMegaPackSprites.png" trans="ffffff" width="1024" height="3718"/>
  </tileset>
@@ -5420,14 +5420,14 @@
   </data>
  </layer>
  <objectgroup name="object">
-  <object id="1" name="solid" x="1" y="742" width="446" height="10"/>
-  <object id="2" name="solid" x="321.333" y="607.667" width="5.5" height="132"/>
+  <object id="1" name="solid" x="1" y="746" width="446" height="10"/>
+  <object id="2" name="solid" x="321.333" y="674.667" width="5.5" height="63.3333"/>
   <object id="3" name="solid" x="1340" y="680" width="3.83333" height="61.6667"/>
-  <object id="6" name="EasyEnemy" x="1237.33" y="702.167" width="39" height="36"/>
-  <object id="8" name="player" x="411.333" y="677.333" width="38" height="65"/>
-  <object id="10" name="solid" x="448" y="742.5" width="1148.5" height="8"/>
+  <object id="8" name="player" x="411.333" y="681.333" width="41" height="60"/>
+  <object id="10" name="solid" x="448" y="746.5" width="1148.5" height="8"/>
   <object id="15" name="solid" x="1068.75" y="680.167" width="3.83333" height="61.6667"/>
   <object id="16" name="solid" x="12.0833" y="676.5" width="3.83333" height="61.6667"/>
-  <object id="18" name="EasyEnemy" x="233.833" y="702.333" width="39" height="36"/>
+  <object id="18" name="EasyEnemy" x="233.833" y="704.333" width="39" height="36"/>
+  <object id="19" name="EasyEnemy" x="1147.83" y="704.333" width="39" height="36"/>
  </objectgroup>
 </map>
