@@ -14,14 +14,14 @@ using namespace sf;
 class Entity {
 public:
 	std::vector<Object> obj;//вектор объектов карты
-	float dx, dy, x, y, speed, moveTimer, deltaTime, elapsedTime, respawnTime, currentFrame;
+	float dx, dy, x, y, speed, moveTimer, deltaTime, elapsedTime, respawnTime, currentFrame, currentFrameEnemy;
 	int w, h, health;
 	bool life, isMove, onGround, enemyAlive;
 	Texture texture;
 	Sprite sprite;
 	String name;
 	Entity(Image& image, String Name, float X, float Y, int W, int H) {
-		x = X; y = Y; w = W; h = H; name = Name; moveTimer = 0, elapsedTime = 0, respawnTime = 3000, currentFrame = 0;
+		x = X; y = Y; w = W; h = H; name = Name; moveTimer = 0, elapsedTime = 0, respawnTime = 3000, currentFrame = 0, currentFrameEnemy = 0;
 		speed = 0; health = 100; dx = 0; dy = 0;
 		life = true; onGround = false; isMove = false; enemyAlive = true;
 		texture.loadFromImage(image);
@@ -97,8 +97,8 @@ public:
 		
 		switch (state)
 		{
-		case right:dx = speed; if (speed != 0) { sprite.setTextureRect(IntRect(50 * int(currentFrame), 149, 41, 64)); } break;
-		case left:dx = -speed; if (speed != 0) { sprite.setTextureRect(IntRect(50 * int(currentFrame), 77, 41, 64)); } break;
+		case right:dx = speed; if (speed > 0) { sprite.setTextureRect(IntRect(50.5 * int(currentFrame), 149, 41, 64)); } break;
+		case left:dx = -speed; if (speed > 0) { sprite.setTextureRect(IntRect(50.5 * int(currentFrame), 77, 41, 64)); } break;
 		case up: break;
 		case down: dx = 0; break;
 		case stay: break;
@@ -174,6 +174,8 @@ int main()
 		for (int i = 0; i < e.size(); i++)//проходимся по элементам этого вектора(а именно по врагам)
 			entities.push_back(new Enemy(easyEnemyImage, "EasyEnemy", lvl, e[i].rect.left, e[i].rect.top, 39, 36));//и закидываем в список всех наших врагов с карты
 
+		
+
 	Clock clock;
 
 	float respawnTimer = 3000, elapsedTime = 0;
@@ -199,12 +201,20 @@ int main()
 			
 			Entity* b = *it;
 			b->update(time);
+			if (b->life == true)
+			{
+				p.currentFrameEnemy += 0.005 * time;
+				if (p.currentFrameEnemy > 12) { p.currentFrameEnemy -= 12; }
+				b->sprite.setTextureRect((IntRect(64 * int(p.currentFrameEnemy), 141, 42, 37)));
+			}
 			if (b->life == false)
 			{
+
 				it = entities.erase(it);
 				delete b;
-
-				entities.push_back(new Enemy(easyEnemyImage, "EasyEnemy", lvl, 1200, 700, 39, 36));
+				
+				entities.push_back(new Enemy(easyEnemyImage, "EasyEnemy", lvl, 1200, 750, 39, 36));
+			
 			}
 			else it++;
 		}
@@ -216,15 +226,31 @@ int main()
 			{
 				if ((*it)->name == "EasyEnemy")
 				{
+					if ((*it)->dx>0)
+					{
+						(*it)->x = p.x - (*it)->w; //отталкиваем его от игрока влево (впритык)
+						(*it)->dx = 0;//останавливаем
+						if (p.dx < 0) { p.x = (*it)->x + (*it)->w; }
+					}
+					if ((*it)->dx < 0)//если враг идет влево
+					{
+						(*it)->x = p.x + p.w; //аналогично - отталкиваем вправо
+						(*it)->dx = 0;//останавливаем
+					}
 					if ((p.dy > 0) && (p.onGround == false)) { (*it)->dx = 0; p.dy = -0.2; (*it)->health = 0; }
+					else
+					{
+						p.health -= 5;
+					}
+					///////выталкивание игрока
+					if (p.dx < 0) { p.x = (*it)->x + (*it)->w; }//если столкнулись с врагом и игрок идет влево то выталкиваем игрока
+					if (p.dx > 0) { p.x = (*it)->x - p.w; }//если столкнулись с врагом и игрок идет вправо то выталкиваем игрока
+					
 				}
-				else
-				{
-					p.health -= 5;
-				}
+				
 			}
 		}
-		for (it = entities.begin(); it != entities.end(); it++) /*{ (*it)->update(time); }*/
+		for (it = entities.begin(); it != entities.end(); it++)
 			window.setView(view);
 		window.clear(Color(77, 83, 140));
 		lvl.Draw(window);//рисуем новую карту
