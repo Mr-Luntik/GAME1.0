@@ -8,13 +8,18 @@
 #include "level.h"
 #include <vector>
 #include <list>
+#include <chrono>
+#include <locale.h>
+#include <thread>
 #include "TinyXML/tinyxml.h"
 using namespace sf;
+
 ////////////////////////////////////Общий класс-родитель//////////////////////////
 class Entity {
 public:
 	std::vector<Object> obj;//вектор объектов карты
-	float dx, dy, x, y, speed, moveTimer, deltaTime, elapsedTime, respawnTime, currentFrame, currentFrameEnemy;
+	float dx, dy, x, y, speed, moveTimer, deltaTime, elapsedTime, respawnTime, currentFrame, currentFrameEnemy, isInvulnerable;
+	const int invulnerabilityDuration = 2;
 	int w, h, health;
 	bool life, isMove, onGround, enemyAlive;
 	Texture texture;
@@ -23,10 +28,11 @@ public:
 	Entity(Image& image, String Name, float X, float Y, int W, int H) {
 		x = X; y = Y; w = W; h = H; name = Name; moveTimer = 0, elapsedTime = 0, respawnTime = 3000, currentFrame = 0, currentFrameEnemy = 0;
 		speed = 0; health = 100; dx = 0; dy = 0;
-		life = true; onGround = false; isMove = false; enemyAlive = true;
+		life = true; onGround = false; isMove = false; enemyAlive = true; isInvulnerable = false;
 		texture.loadFromImage(image);
 		sprite.setTexture(texture);
 		sprite.setOrigin(w / 2, h / 2);
+		sprite.scale(0.7f, 0.7f);
 	}
 	FloatRect getRect() {//ф-ция получения прямоугольника. его коорд,размеры (шир,высот).
 		return FloatRect(x, y, w, h);//эта ф-ция нужна для проверки столкновений
@@ -41,23 +47,24 @@ public:
 	Player(Image& image, String Name, Level& lev, float X, float Y, int W, int H) :Entity(image, Name, X, Y, W, H) {
 		playerScore = 0; state = stay; obj = lev.GetAllObjects();//инициализируем.получаем все объекты для взаимодействия персонажа с картой
 		if (name == "Player1") {
-			sprite.setTextureRect(IntRect(4, 2, w, h));
+			sprite.setTextureRect(IntRect(4, 3, w, h));
 		}
+		sprite.scale(0.5f, 0.6f);
 	}
-	FloatRect getRect()
+	/*FloatRect getRect()
 	{
 		return FloatRect(x, y, w, h);
-	}
+	}*/
 	
 	void control() {
 		
 		if (Keyboard::isKeyPressed(Keyboard::Left)) {
-			state = left; speed = 0.1;
-			sprite.setTextureRect(IntRect(6, 76, w, h));
+			state = left; speed = 0.05;
+			sprite.setTextureRect(IntRect(55, 77, w, h));
 
 		}
 		if (Keyboard::isKeyPressed(Keyboard::Right)) {
-			state = right; speed = 0.1;
+			state = right; speed = 0.05;
 			sprite.setTextureRect(IntRect(50, 149, w, h));
 		}
 		if ((Keyboard::isKeyPressed(Keyboard::Up)) && (onGround)) {
@@ -107,7 +114,7 @@ public:
 		checkCollisionWithMap(dx, 0);
 		y += dy * time;
 		checkCollisionWithMap(0, dy);
-		sprite.setPosition(x + w / 2, y + h / 2);
+		sprite.setPosition(x + w / 1.10, y + h / 1.30);
 		if (health <= 0) { life = false; }
 		if (!isMove) { speed = 0; }
 		setPlayercoordinateForView(x, y);
@@ -116,6 +123,31 @@ public:
 		deltaTime = time;
 		
 	}
+
+	//Функция нанесения урона по герою
+	void takeDamage(int damage)
+	{
+		if (isInvulnerable)
+		{
+			return;
+		}
+		health -= damage;
+
+		if (health < 0)
+		{
+			health = 0;
+		}
+		makeInvulnerable();
+	}
+	void makeInvulnerable()
+	{
+		isInvulnerable = true;
+		std::thread([this]() {
+			std::this_thread::sleep_for(std::chrono::seconds(invulnerabilityDuration));
+			isInvulnerable = false;
+		}).detach();
+
+	}
 };
 class Enemy :public Entity {
 public:
@@ -123,8 +155,9 @@ public:
 		obj = lvl.GetObjects("solid");//инициализируем.получаем нужные объекты для взаимодействия врага с картой
 		if (name == "EasyEnemy") {
 			sprite.setTextureRect(IntRect(4, 142, w, h));
-			dx = 0.06;
-			sprite.scale(1.5f, 1.5f);
+			dx = 0.02;
+			sprite.scale(1.0f, 1.0f);
+			
 		}
 	}
 	void checkCollisionWithMap(float Dx, float Dy)
@@ -135,8 +168,8 @@ public:
 				//if (obj[i].name == "solid"){//если встретили препятствие (объект с именем solid)
 				if (Dy > 0) { y = obj[i].rect.top - h;  dy = 0; onGround = true; }
 				if (Dy < 0) { y = obj[i].rect.top + obj[i].rect.height;   dy = 0; }
-				if (Dx > 0) { x = obj[i].rect.left - w;  dx = -0.1; sprite.scale(-1, 1); }
-				if (Dx < 0) { x = obj[i].rect.left + obj[i].rect.width; dx = 0.1; sprite.scale(-1, 1); }
+				if (Dx > 0) { x = obj[i].rect.left - w;  dx = -0.02; sprite.scale(-1, 1); }
+				if (Dx < 0) { x = obj[i].rect.left + obj[i].rect.width; dx = 0.02; sprite.scale(-1, 1); }
 				//}
 			}
 	}
@@ -146,17 +179,24 @@ public:
 			//moveTimer += time;if (moveTimer>3000){ dx *= -1; moveTimer = 0; }//меняет направление примерно каждые 3 сек
 			checkCollisionWithMap(dx, 0);
 			x += dx * time;
-			sprite.setPosition(x + w / 2, y + h / 2);
+			sprite.setPosition(x + w / 2, y + h / 1.6);
 			if (health <= 0) { life = false; }
 		}
 	}
 };
 int main()
 {
-	RenderWindow window(VideoMode(640, 480), "Lesson 22. kychka-pc.ru");
-	view.reset(FloatRect(0, 0, 640, 480));
+	setlocale(LC_ALL, "Rus");
+	RenderWindow window(VideoMode(1920, 1080), "Lesson 22. kychka-pc.ru", Style::Fullscreen);
+	view.reset(FloatRect(0, 0, 320, 240));
 	Level lvl;//создали экземпляр класса уровень
-	lvl.LoadFromFile("map.tmx");//загрузили в него карту, внутри класса с помощью методов он ее обработает.
+	lvl.LoadFromFile("MapForGame1.tmx");//загрузили в него карту, внутри класса с помощью методов он ее обработает.
+
+	Font MyFont;
+	MyFont.loadFromFile("CyrilicOld.ttf");
+	Text text("", MyFont, 20);
+	text.setFillColor(Color::Red);
+	text.setStyle(sf::Text::Bold | sf::Text::Underlined);
 
 	Image heroImage;
 	heroImage.loadFromFile("images/Mage.png");
@@ -165,8 +205,8 @@ int main()
 
 	Object player = lvl.GetObject("player");//объект игрока на нашей карте.задаем координаты игроку в начале при помощи него
 
-	Player p(heroImage, "Player1", lvl, player.rect.left, player.rect.top, 40, 67);//передаем координаты прямоугольника player из карты в координаты нашего игрока
-
+	Player p(heroImage, "Player1", lvl, player.rect.left, player.rect.top, 39, 67);//передаем координаты прямоугольника player из карты в координаты нашего игрока
+	
 	
 	std::list<Entity*> entities;
 	std::list <Entity*> ::iterator it;
@@ -203,6 +243,7 @@ int main()
 			b->update(time);
 			if (b->life == true)
 			{
+				
 				p.currentFrameEnemy += 0.005 * time;
 				if (p.currentFrameEnemy > 12) { p.currentFrameEnemy -= 12; }
 				b->sprite.setTextureRect((IntRect(64 * int(p.currentFrameEnemy), 141, 42, 37)));
@@ -213,8 +254,8 @@ int main()
 				it = entities.erase(it);
 				delete b;
 				
-				entities.push_back(new Enemy(easyEnemyImage, "EasyEnemy", lvl, 1200, 750, 39, 36));
-			
+				entities.push_back(new Enemy(easyEnemyImage, "EasyEnemy", lvl, 900, 750, 39, 36));
+				b->life = true;
 			}
 			else it++;
 		}
@@ -240,9 +281,10 @@ int main()
 					if ((p.dy > 0) && (p.onGround == false)) { (*it)->dx = 0; p.dy = -0.2; (*it)->health = 0; }
 					else
 					{
-						p.health -= 5;
+						p.takeDamage(5);
+						
 					}
-					///////выталкивание игрока
+					/////выталкивание игрока
 					if (p.dx < 0) { p.x = (*it)->x + (*it)->w; }//если столкнулись с врагом и игрок идет влево то выталкиваем игрока
 					if (p.dx > 0) { p.x = (*it)->x - p.w; }//если столкнулись с врагом и игрок идет вправо то выталкиваем игрока
 					
@@ -258,6 +300,11 @@ int main()
 		for (it = entities.begin(); it != entities.end(); it++) {
 			window.draw((*it)->sprite);
 		}
+		std::ostringstream playerLife;
+		playerLife << p.health;
+		text.setString("Life: " + playerLife.str());
+		text.setPosition(view.getCenter().x -300, view.getCenter().y-230);
+		window.draw(text);
 
 		window.draw(p.sprite);
 		window.display();
