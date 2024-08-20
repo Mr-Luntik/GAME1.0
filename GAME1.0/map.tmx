@@ -5422,7 +5422,7 @@
  <objectgroup name="object">
   <object id="1" name="solid" x="1" y="746" width="446" height="10"/>
   <object id="2" name="solid" x="332.333" y="677.667" width="5.5" height="63.3333"/>
-  <object id="3" name="solid" x="1340" y="680" width="3.83333" height="61.6667"/>
+  <object id="3" name="solid" x="1366" y="684" width="3.83333" height="61.6667"/>
   <object id="8" name="player" x="411.333" y="681.333" width="41" height="60"/>
   <object id="10" name="solid" x="448" y="746.5" width="1148.5" height="8"/>
   <object id="16" name="solid" x="0.5833" y="623.5" width="5.33333" height="121.167"/>
