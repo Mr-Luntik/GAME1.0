@@ -20,16 +20,16 @@ public:
 	std::vector<Object> obj;//вектор объектов карты
 	float dx, dy, x, y, speed, moveTimer, deltaTime, elapsedTime, respawnTime, currentFrame, currentFrameEnemy, isInvulnerable;
 	const int invulnerabilityDuration = 2;
-	const float CAMERA_MARGIN_X = 100.0f, CAMERA_MARGIN_Y = 50.0f;
+	const float CAMERA_MARGIN_X = 100.0f, CAMERA_MARGIN_Y = 25.0f;
 	int w, h, health;
-	bool life, isMove, onGround, enemyAlive, isKeyPressed;
+	bool life, isMove, onGround, enemyAlive, isKeyPressed, startPos;
 	Texture texture;
 	Sprite sprite;
 	String name;
 	Entity(Image& image, String Name, float X, float Y, int W, int H) {
 		x = X; y = Y; w = W; h = H; name = Name; moveTimer = 0, elapsedTime = 0, respawnTime = 3000, currentFrame = 0, currentFrameEnemy = 0; 
 		speed = 0; health = 100; dx = 0; dy = 0;
-		life = true; onGround = false; isMove = false; enemyAlive = true; isInvulnerable = false; isKeyPressed = false;
+		life = true; onGround = false; isMove = false; enemyAlive = true; isInvulnerable = false; isKeyPressed = false; startPos = true;
 		texture.loadFromImage(image);
 		sprite.setTexture(texture);
 		sprite.setOrigin(w / 2, h / 2);
@@ -63,18 +63,28 @@ public:
 			if (Keyboard::isKeyPressed(Keyboard::Left)) {
 				state = left; speed = 0.05;
 				sprite.setTextureRect(IntRect(55, 77, w, h));
-
+				isMove = true;
+			}
+			else
+			{
+				isMove = false;
 			}
 			if (Keyboard::isKeyPressed(Keyboard::Right)) {
 				state = right; speed = 0.05;
 				sprite.setTextureRect(IntRect(50, 149, w, h));
+				isMove = true;
 			}
+			
 			if ((Keyboard::isKeyPressed(Keyboard::Up)) && (onGround)) {
 				state = jump; dy = -0.5; onGround = false;
+				isMove = true;
 			}
+			
 			if (Keyboard::isKeyPressed(Keyboard::Down)) {
 				state = down;
+				isMove = true;
 			}
+			
 		/*}*/
 		
 	}
@@ -119,7 +129,7 @@ public:
 		if (health <= 0) { life = false; }
 		if (!isMove) { speed = 0; }
 		
-		if (life) { /*setPlayercoordinateForView(x, y); */}
+		if (life) { /*setPlayercoordinateForView(x, y);*/ }
 		dy = dy + 0.0015 * time;
 	}
 
@@ -183,6 +193,7 @@ public:
 		}
 	}
 };
+
 int main()
 {
 	setlocale(LC_ALL, "Rus");
@@ -215,10 +226,10 @@ int main()
 
 	
 	
-
+	
 
 	Clock clock;
-
+	
 	float respawnTimer = 3000, elapsedTime = 0;
 	while (window.isOpen())
 	{
@@ -231,10 +242,16 @@ int main()
 		clock.restart();
 		time = time / 800;
 
+		//Ставит камеру в начале игры на персонажа
+		if (p.startPos)
+		{
+			setPlayercoordinateForView(p.x, p.y);
+			p.startPos = false;
+		}
 		
 		Vector2f playerPosition(p.x, p.y);
 		Vector2f viewCenter = view.getCenter();
-		if (p.isMove) {
+		if (p.isMove && playerPosition.x >= 80) {
 			// Check if the player is near the left edge
 			if (playerPosition.x < viewCenter.x - p.CAMERA_MARGIN_X)  {
 				view.move(-(viewCenter.x - playerPosition.x + p.CAMERA_MARGIN_X) * time / 1000.0f, 0);
@@ -267,7 +284,7 @@ int main()
 			if (event.type == sf::Event::Closed)
 				window.close();
 		}
-		if (event.type == sf::Event::KeyPressed)
+		/*if (event.type == sf::Event::KeyPressed)
 		{
 			p.isKeyPressed = true;
 			p.isMove = true;
@@ -277,7 +294,7 @@ int main()
 		{
 			p.isKeyPressed = false;
 			p.isMove = false;
-		}
+		}*/
 		p.update(time);
 		for (it = entities.begin(); it != entities.end();)
 		{
