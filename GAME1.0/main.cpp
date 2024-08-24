@@ -51,6 +51,8 @@ public:
 			sprite.setTextureRect(IntRect(52, 2, w, h));
 		}
 		sprite.scale(0.5f, 0.6f);
+		Player::w *= 0.5f;
+		Player::h *= 0.6f;
 	}
 	/*FloatRect getRect()
 	{
@@ -165,7 +167,9 @@ public:
 		if (name == "EasyEnemy") {
 			sprite.setTextureRect(IntRect(4, 142, w, h));
 			dx = 0.02;
-			sprite.scale(1.0f, 1.0f);
+			sprite.scale(1.0f, 1.2f);
+			Entity::w *= 1.0f;
+			Entity::h *= 1.0f;
 
 		}
 	}
@@ -266,7 +270,7 @@ int main()
 			/*cout << "if" << " " << "playerPosition.y: " << playerPosition.y << ">" << " viewCenter.y < : " << viewCenter.y << "\n";*/
 			std::cout << "viewCenter.y: " << viewCenter.y << "\n";
 			if (playerPosition.y < viewCenter.y - p.CAMERA_MARGIN_Y ) {
-				if (viewCenter.y > 160)
+				if (viewCenter.y > 240)
 					view.move(0, -(viewCenter.y - playerPosition.y + p.CAMERA_MARGIN_Y) * time / 500.0f);
 			}
 			// Check if the player is near the bottom edge
