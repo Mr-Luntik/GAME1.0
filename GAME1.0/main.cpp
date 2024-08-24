@@ -20,7 +20,7 @@ public:
 	std::vector<Object> obj;//вектор объектов карты
 	float dx, dy, x, y, speed, moveTimer, deltaTime, elapsedTime, respawnTime, currentFrame, currentFrameEnemy, isInvulnerable;
 	const int invulnerabilityDuration = 2;
-	const float CAMERA_MARGIN_X = 100.0f, CAMERA_MARGIN_Y = 25.0f;
+	const float CAMERA_MARGIN_X = 100.0f, CAMERA_MARGIN_Y = 40.0f;
 	int w, h, health;
 	bool life, isMove, onGround, enemyAlive, isKeyPressed, startPos;
 	Texture texture;
@@ -245,30 +245,39 @@ int main()
 		//Ставит камеру в начале игры на персонажа
 		if (p.startPos)
 		{
-			setPlayercoordinateForView(p.x, p.y);
+			setPlayercoordinateForView(180, 265);
 			p.startPos = false;
 		}
 		
 		Vector2f playerPosition(p.x, p.y);
 		Vector2f viewCenter = view.getCenter();
-		if (p.isMove && playerPosition.x >= 80) {
+		if (playerPosition.x >= 80) 
+		{
 			// Check if the player is near the left edge
 			if (playerPosition.x < viewCenter.x - p.CAMERA_MARGIN_X)  {
-				view.move(-(viewCenter.x - playerPosition.x + p.CAMERA_MARGIN_X) * time / 1000.0f, 0);
+				view.move(-(viewCenter.x - playerPosition.x + p.CAMERA_MARGIN_X) * time / 4000.0f, 0);
 			}
 			// Check if the player is near the right edge
 			else if (playerPosition.x > viewCenter.x + p.CAMERA_MARGIN_X ) {
-				view.move((playerPosition.x - viewCenter.x + p.CAMERA_MARGIN_X) * time / 1000.0f, 0);
+				view.move((playerPosition.x - viewCenter.x + p.CAMERA_MARGIN_X) * time / 4000.0f, 0);
 			}
 
 			// Check if the player is near the top edge
-			if (playerPosition.y < viewCenter.y - p.CAMERA_MARGIN_Y) {
-				view.move(0, -(viewCenter.y - playerPosition.y + p.CAMERA_MARGIN_Y) * time / 1000.0f);
+			/*cout << "if" << " " << "playerPosition.y: " << playerPosition.y << ">" << " viewCenter.y < : " << viewCenter.y << "\n";*/
+			std::cout << "viewCenter.y: " << viewCenter.y << "\n";
+			if (playerPosition.y < viewCenter.y - p.CAMERA_MARGIN_Y ) {
+				if (viewCenter.y > 160)
+					view.move(0, -(viewCenter.y - playerPosition.y + p.CAMERA_MARGIN_Y) * time / 500.0f);
 			}
 			// Check if the player is near the bottom edge
+			
 			else if (playerPosition.y > viewCenter.y + p.CAMERA_MARGIN_Y) {
-				view.move(0, (playerPosition.y - viewCenter.y + p.CAMERA_MARGIN_Y) * time / 1000.0f);
+				if (viewCenter.y < 285)
+					view.move(0, (playerPosition.y - viewCenter.y + p.CAMERA_MARGIN_Y) * time / 500.0f);
+					
 			}
+			
+			
 		}
 		sf::Vector2i localPosition(p.x, p.y);
 		if (localPosition.x < 3) { view.move(-0.2 * time, 0); }
