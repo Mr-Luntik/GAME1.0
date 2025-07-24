@@ -268,7 +268,7 @@ int main()
 
 			// Check if the player is near the top edge
 			/*cout << "if" << " " << "playerPosition.y: " << playerPosition.y << ">" << " viewCenter.y < : " << viewCenter.y << "\n";*/
-			std::cout << "viewCenter.y: " << viewCenter.y << "\n";
+			
 			if (playerPosition.y < viewCenter.y - p.CAMERA_MARGIN_Y ) {
 				if (viewCenter.y > 240)
 					view.move(0, -(viewCenter.y - playerPosition.y + p.CAMERA_MARGIN_Y) * time / 500.0f);
